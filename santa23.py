@@ -4,13 +4,11 @@ class SymmetricGroup():
 
     def __init__(self, perm):
 
-        '''
-        perm : List
-        '''
+        ''' perm : List '''
 
         self.perm = perm
         if type(self.perm)!=list:
-            raise ValueError('permutation should be list.')
+            raise ValueError('perm should be list.')
         if sorted(self.perm)!=list(range(len(perm))):
             raise ValueError('perm should be continuous.')
 
@@ -20,10 +18,7 @@ class SymmetricGroup():
 
     def __call__(self, x):
 
-        '''
-        return same type according to x. (list and SymmetricGroup only so far.)
-        '''
-
+        ''' return same type according to x. (list and SymmetricGroup only so far.) '''
         if type(x)==SymmetricGroup:
             if len(x.perm)!=len(self.perm):
                 raise ValueError('same length only.')
@@ -37,9 +32,7 @@ class SymmetricGroup():
 
     def __neg__(self):
 
-        '''
-        return negative element.
-        '''
+        ''' return negative element. '''
 
         _perm_dict = dict(zip(self.perm,list(range(len(self.perm)))))
         _perm = [num for _, num in sorted(_perm_dict.items())]
@@ -47,17 +40,13 @@ class SymmetricGroup():
     
     def __mul__(self, other):
 
-        '''
-        same type only
-        '''
+        ''' same type only '''
 
         return self(other)
     
     def __imul__(self, other):
 
-        '''
-        same type only
-        '''
+        ''' same type only '''
 
         _perm = self(other.perm)
         self.perm = _perm
@@ -73,9 +62,7 @@ class SymmetricGroup():
     
     def __pow__(self, num):
 
-        '''
-        num should be integer.
-        '''
+        ''' num should be integer. '''
 
         if type(num)!=int:
             raise ValueError('power should be integer.')
@@ -90,9 +77,7 @@ class SymmetricGroup():
 
     def copy(self):
 
-        '''
-        duplicate oneself
-        '''
+        ''' duplicate oneself '''
 
         return SymmetricGroup(self.perm)
 
@@ -101,6 +86,7 @@ class SymmetricGroup():
         '''
         here len means by multipling how many itselves this instance is reobtained.
         
+        e.g.)
         self**len(self) == unit
         self**(len(self)+1) == self
         '''
