@@ -1,4 +1,5 @@
 import os
+import re
 from glob import glob
 from pathlib import Path
 from tqdm import tqdm
@@ -116,16 +117,54 @@ class Puzzle():
     def __init__(self, pd_row, info_pth):
 
         self.puzzle_type = pd_row.puzzle_type
-        self.solution_state = pd_row.solution_state
-        self.initial_state = pd_row.initial_state
+        self.solution_state = self.state_encoder(pd_row.solution_state)
+        self.initial_state = self.state_encoder(pd_row.initial_state)
         self.num_wildcards = pd_row.num_wildcards
+        self._info_pth = info_pth
         self.puzzle_info = pd.read_csv(info_pth)
+        
+        self.current_state = self.state_encoder(pd_row.initial_state)
+        self.move_log = []
 
         self._set_moves()
 
+
+    def copy(self):
+
+        newp = Puzzle(self.puzzle_type, self._info_pth)
+
+        newp.current_state = self.current_state
+        newp.move_log = self.move_log
+
     
+    def state_encoder(self, state_str):
+        
+        if re.match('[A-Z];', state_str):
+            return ''.join(state_str.split(';'))
+        if re.match('N[0-9]+;', state_str):
+            return [int(k) for k in state_str[1:].split(';N')]
+        
+
+    def state_decoder(self, state):
+
+        if type(state)==str:
+            return ';'.join(list(state))
+        if type(state)==list:
+            return 'N'+';N'.join(state)
+
+
+
     def _set_moves(self):
 
         _allowed_moves = self.puzzle_info[self.puzzle_info.puzzle_type==self.puzzle_type].allowed_moves.iloc[0]
         self.allowed_moves = {key:Permutation(perm) for key, perm in eval(_allowed_moves).items()}
 
+
+    def __call__(self,key):
+
+        if not key in list(self.allowed_moves.keys()):
+            raise ValueError('key should be in allowed_moves.')
+        
+        _Permutation = self.allowed_moves[key]
+        self.move_log.append(self.current_state)
+        self.current_state = _Permutation(self.current_state)
