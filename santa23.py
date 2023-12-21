@@ -5,7 +5,6 @@ from pathlib import Path
 from tqdm import tqdm
 import gc
 
-
 import numpy as np
 import pandas as pd
 
@@ -34,11 +33,19 @@ class Permutation():
                 raise ValueError('same length only.')
             _perm = [x.perm[t] for t in self.perm]
             return Permutation(_perm)
-        if type(x)==list:
+        elif type(x)==list:
             if len(x)!=len(self.perm):
                 raise ValueError('same length only.')
             _perm = [x[t] for t in self.perm]
-        return _perm
+            return _perm
+        elif type(x)==str:
+            if len(x)!=len(self.perm):
+                raise ValueError('same length only.')
+            _perm = ''.join([x[t] for t in self.perm])
+            return _perm
+        else:
+            raise ValueError('type should be Permutation, list, or str.')
+
 
     def __neg__(self):
 
@@ -136,9 +143,9 @@ class Puzzle():
         newp.current_state = self.current_state
         newp.move_log = self.move_log
 
-    
+
     def state_encoder(self, state_str):
-        
+    
         if re.match('[A-Z];', state_str):
             return ''.join(state_str.split(';'))
         if re.match('N[0-9]+;', state_str):
@@ -153,11 +160,11 @@ class Puzzle():
             return 'N'+';N'.join(state)
 
 
-
     def _set_moves(self):
 
         _allowed_moves = self.puzzle_info[self.puzzle_info.puzzle_type==self.puzzle_type].allowed_moves.iloc[0]
-        self.allowed_moves = {key:Permutation(perm) for key, perm in eval(_allowed_moves).items()}
+        _allowed_moves = {key:Permutation(perm) for key, perm in eval(_allowed_moves).items()}
+        self.allowed_moves = _allowed_moves | {'-'+key:(-perm) for key, perm in _allowed_moves.items()}
 
 
     def __call__(self,key):
@@ -165,6 +172,7 @@ class Puzzle():
         if not key in list(self.allowed_moves.keys()):
             raise ValueError('key should be in allowed_moves.')
         
-        _Permutation = self.allowed_moves[key]
+        _gotten_perm = self.allowed_moves[key]
         self.move_log.append(self.current_state)
-        self.current_state = _Permutation(self.current_state)
+        self.current_state = _gotten_perm(self.current_state)
+        return self
