@@ -1,6 +1,15 @@
+import os
+from glob import glob
+from pathlib import Path
+from tqdm import tqdm
+import gc
 
 
-class SymmetricGroup():
+import numpy as np
+import pandas as pd
+
+
+class Permutation():
 
     def __init__(self, perm):
 
@@ -18,12 +27,12 @@ class SymmetricGroup():
 
     def __call__(self, x):
 
-        ''' return same type according to x. (list and SymmetricGroup only so far.) '''
-        if type(x)==SymmetricGroup:
+        ''' return same type according to x. (list and Permutation only so far.) '''
+        if type(x)==Permutation:
             if len(x.perm)!=len(self.perm):
                 raise ValueError('same length only.')
             _perm = [x.perm[t] for t in self.perm]
-            return SymmetricGroup(_perm)
+            return Permutation(_perm)
         if type(x)==list:
             if len(x)!=len(self.perm):
                 raise ValueError('same length only.')
@@ -36,7 +45,7 @@ class SymmetricGroup():
 
         _perm_dict = dict(zip(self.perm,list(range(len(self.perm)))))
         _perm = [num for _, num in sorted(_perm_dict.items())]
-        return SymmetricGroup(_perm)
+        return Permutation(_perm)
     
     def __mul__(self, other):
 
@@ -67,7 +76,7 @@ class SymmetricGroup():
         if type(num)!=int:
             raise ValueError('power should be integer.')
         else:
-            _unit = SymmetricGroup(list(range(len(self.perm))))
+            _unit = Permutation(list(range(len(self.perm))))
             if num>=0:
                 _perm = eval('_unit'+' * self'*num)
                 return _perm
@@ -79,7 +88,7 @@ class SymmetricGroup():
 
         ''' duplicate oneself '''
 
-        return SymmetricGroup(self.perm)
+        return Permutation(self.perm)
 
     def __len__(self):
 
@@ -100,3 +109,23 @@ class SymmetricGroup():
                 break
             
         return k
+
+
+class Puzzle():
+
+    def __init__(self, pd_row, info_pth):
+
+        self.puzzle_type = pd_row.puzzle_type
+        self.solution_state = pd_row.solution_state
+        self.initial_state = pd_row.initial_state
+        self.num_wildcards = pd_row.num_wildcards
+        self.puzzle_info = pd.read_csv(info_pth)
+
+        self._set_moves()
+
+    
+    def _set_moves(self):
+
+        _allowed_moves = self.puzzle_info[self.puzzle_info.puzzle_type==self.puzzle_type].allowed_moves.iloc[0]
+        self.allowed_moves = {key:Permutation(perm) for key, perm in eval(_allowed_moves).items()}
+

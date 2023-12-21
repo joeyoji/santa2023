@@ -7,6 +7,7 @@ __pycache__/
 *.so
 # competition data
 data/
+experiment/
 # Distribution / packaging
 .Python
 build/
