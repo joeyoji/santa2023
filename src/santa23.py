@@ -24,7 +24,7 @@ class Permutation():
 
     def __call__(self, x):
 
-        ''' return same type according to x. (list and Permutation only so far.) '''
+        ''' return same type according to x. (Permutation and np.ndarray only so far.) '''
         if type(x)==Permutation:
             if len(x.perm)!=len(self.perm):
                 raise ValueError('same length only.')
@@ -34,16 +34,6 @@ class Permutation():
             if len(x)!=len(self.perm):
                 raise ValueError('same length only.')
             _perm = x[self.perm]
-            return _perm
-        elif type(x)==list:
-            if len(x)!=len(self.perm):
-                raise ValueError('same length only.')
-            _perm = [x[t] for t in self.perm]
-            return _perm
-        elif type(x)==str:
-            if len(x)!=len(self.perm):
-                raise ValueError('same length only.')
-            _perm = ''.join([x[t] for t in self.perm])
             return _perm
         else:
             raise ValueError('type should be Permutation, list, or str.')
@@ -145,20 +135,25 @@ class Puzzle():
         self.__init__(self._pd_row, self._info_pth)
 
 
+    def __str__(self):
+
+        return self.state_decoder(self.current_state)
+
+
     def state_encoder(self, state_str):
     
         if re.match('[A-Z];', state_str):
-            return ''.join(state_str.split(';'))
+            return np.array(state_str.split(';'),dtype='<U1')
         if re.match('N[0-9]+;', state_str):
-            return [int(k) for k in state_str[1:].split(';N')]
+            return np.array([int(k) for k in state_str[1:].split(';N')])
         
 
     def state_decoder(self, state):
 
-        if type(state)==str:
-            return ';'.join(list(state))
-        if type(state)==list:
-            return 'N'+';N'.join(state)
+        if state.dtype==np.dtype('<U1'):
+            return ';'.join(state)
+        if state.dtype==np.dtype('int64'):
+            return 'N'+';N'.join(state.astype(str))
 
 
     def _set_moves(self):
