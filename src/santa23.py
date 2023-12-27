@@ -15,15 +15,12 @@ class Permutation():
 
         ''' perm : List '''
 
-        self.perm = perm
-        if type(self.perm)!=list:
-            raise ValueError('perm should be list.')
-        if sorted(self.perm)!=list(range(len(perm))):
+        self.perm = np.array(perm)
+        if type(self.perm)!=np.ndarray:
+            raise ValueError('perm should be np.ndarray.')
+        if np.abs(np.sort(self.perm)-np.arange(len(perm))).sum()>0:
             raise ValueError('perm should be continuous.')
 
-    def __str__(self):
-
-        return str(self.perm)
 
     def __call__(self, x):
 
@@ -31,8 +28,13 @@ class Permutation():
         if type(x)==Permutation:
             if len(x.perm)!=len(self.perm):
                 raise ValueError('same length only.')
-            _perm = [x.perm[t] for t in self.perm]
+            _perm = x.perm[self.perm]
             return Permutation(_perm)
+        elif type(x)==np.ndarray:
+            if len(x)!=len(self.perm):
+                raise ValueError('same length only.')
+            _perm = x[self.perm]
+            return _perm
         elif type(x)==list:
             if len(x)!=len(self.perm):
                 raise ValueError('same length only.')
@@ -51,8 +53,7 @@ class Permutation():
 
         ''' return negative element. '''
 
-        _perm_dict = dict(zip(self.perm,list(range(len(self.perm)))))
-        _perm = [num for _, num in sorted(_perm_dict.items())]
+        _perm = np.argsort(self.perm)
         return Permutation(_perm)
     
     def __mul__(self, other):
@@ -73,7 +74,7 @@ class Permutation():
     def __eq__(self, other):
 
         if type(self)==type(other):
-            return self.perm==other.perm
+            return np.abs(self.perm-other.perm).sum()==0
         else:
             return False
     
@@ -84,7 +85,7 @@ class Permutation():
         if type(num)!=int:
             raise ValueError('power should be integer.')
         else:
-            _unit = Permutation(list(range(len(self.perm))))
+            _unit = Permutation(np.arange(len(self.perm)))
             if num>=0:
                 _perm = eval('_unit'+' * self'*num)
                 return _perm
@@ -139,21 +140,9 @@ class Puzzle():
         self._set_moves()
 
 
-    def copy(self):
-
-        newp = Puzzle(self._pd_row, self._info_pth)
-
-        newp.current_state = self.current_state
-        newp.move_log = self.move_log[:]
-
-        return newp
-
-
     def reset(self):
 
-        newp = Puzzle(self.puzzle_type, self._info_pth)
-
-        return newp
+        self.__init__(self._pd_row, self._info_pth)
 
 
     def state_encoder(self, state_str):
@@ -177,6 +166,9 @@ class Puzzle():
         _allowed_moves = self.puzzle_info[self.puzzle_info.puzzle_type==self.puzzle_type].allowed_moves.iloc[0]
         _allowed_moves = {key:Permutation(perm) for key, perm in eval(_allowed_moves).items()}
         self.allowed_moves = _allowed_moves | {'-'+key:(-perm) for key, perm in _allowed_moves.items()}
+        _perm_len = len(list(_allowed_moves.values())[0].perm)
+        _u0 = Permutation(list(range(_perm_len)))
+        self.allowed_moves['u0'] = _u0
 
 
     def __call__(self,key):
@@ -184,11 +176,10 @@ class Puzzle():
         if not key in list(self.allowed_moves.keys()):
             raise ValueError('key should be in allowed_moves.')
         
-        newp = self.copy()
-        _gotten_perm = newp.allowed_moves[key]
-        newp.current_state = _gotten_perm(newp.current_state)
-        newp.move_log += [key, newp.current_state, ]
-        return newp
+        _gotten_perm = self.allowed_moves[key]
+        self.current_state = _gotten_perm(self.current_state)
+        self.move_log += [key, self.current_state, ]
+        return self
     
 
     def random_walk(self,stepsize,seed=None):
@@ -196,20 +187,18 @@ class Puzzle():
         if seed:
             np.random.seed(seed)
 
-        newp = self.copy()
-        _walk = np.random.choice(list(newp.allowed_moves.keys()),size=stepsize,replace=True)
+        _walk = np.random.choice(list(self.allowed_moves.keys()),size=stepsize,replace=True)
         for key in _walk:
-            newp = newp(key)
-        return newp
+            self(key)
+        return self
 
 
     def reverse_log(self):
 
-        newp = self.copy()
-        _temp_log = newp.move_log[::-1]
+        _temp_log = self.move_log[::-1]
         _temp_log[1::2] = [op[1:] if op.startswith('-') else '-'+op for op in _temp_log[1::2]]
-        newp.initial_state = _temp_log[0]
-        newp.current_state = _temp_log[-1]
-        newp.move_log = _temp_log
+        self.initial_state = _temp_log[0]
+        self.current_state = _temp_log[-1]
+        self.move_log = _temp_log
 
-        return newp
+        return self
