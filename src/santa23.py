@@ -123,6 +123,9 @@ class Puzzle():
 
     def __init__(self, pd_row, info_pth):
 
+        self._pd_row = pd_row
+        self._info_pth = info_pth
+
         self.puzzle_type = pd_row.puzzle_type
         self.solution_state = self.state_encoder(pd_row.solution_state)
         self.initial_state = self.state_encoder(pd_row.initial_state)
@@ -131,17 +134,26 @@ class Puzzle():
         self.puzzle_info = pd.read_csv(info_pth)
         
         self.current_state = self.state_encoder(pd_row.initial_state)
-        self.move_log = []
+        self.move_log = [self.state_encoder(pd_row.initial_state),]
 
         self._set_moves()
 
 
     def copy(self):
 
-        newp = Puzzle(self.puzzle_type, self._info_pth)
+        newp = Puzzle(self._pd_row, self._info_pth)
 
         newp.current_state = self.current_state
-        newp.move_log = self.move_log
+        newp.move_log = self.move_log[:]
+
+        return newp
+
+
+    def reset(self):
+
+        newp = Puzzle(self.puzzle_type, self._info_pth)
+
+        return newp
 
 
     def state_encoder(self, state_str):
@@ -172,7 +184,32 @@ class Puzzle():
         if not key in list(self.allowed_moves.keys()):
             raise ValueError('key should be in allowed_moves.')
         
-        _gotten_perm = self.allowed_moves[key]
-        self.move_log.append(self.current_state)
-        self.current_state = _gotten_perm(self.current_state)
-        return self
+        newp = self.copy()
+        _gotten_perm = newp.allowed_moves[key]
+        newp.current_state = _gotten_perm(newp.current_state)
+        newp.move_log += [key, newp.current_state, ]
+        return newp
+    
+
+    def random_walk(self,stepsize,seed=None):
+
+        if seed:
+            np.random.seed(seed)
+
+        newp = self.copy()
+        _walk = np.random.choice(list(newp.allowed_moves.keys()),size=stepsize,replace=True)
+        for key in _walk:
+            newp = newp(key)
+        return newp
+
+
+    def reverse_log(self):
+
+        newp = self.copy()
+        _temp_log = newp.move_log[::-1]
+        _temp_log[1::2] = [op[1:] if op.startswith('-') else '-'+op for op in _temp_log[1::2]]
+        newp.initial_state = _temp_log[0]
+        newp.current_state = _temp_log[-1]
+        newp.move_log = _temp_log
+
+        return newp
