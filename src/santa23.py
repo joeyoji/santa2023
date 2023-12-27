@@ -185,12 +185,28 @@ class Puzzle():
         for key in _walk:
             self(key)
         return self
+    
 
+    def march_inplace(self,stepsize):
+
+        for _ in range(stepsize):
+            self('u0')
+        return self
+
+
+    def _reverse_op(self, op):
+
+        if op=='u0':
+            return op
+        elif op.startswith('-'):
+            return op[1:]
+        else:
+            return '-'+op
 
     def reverse_log(self):
 
         _temp_log = self.move_log[::-1]
-        _temp_log[1::2] = [op[1:] if op.startswith('-') else '-'+op for op in _temp_log[1::2]]
+        _temp_log[1::2] = [self._reverse_op(op) for op in _temp_log[1::2]]
         self.initial_state = _temp_log[0]
         self.current_state = _temp_log[-1]
         self.move_log = _temp_log
