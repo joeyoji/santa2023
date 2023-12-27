@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 
 
+CFG_INFO_PTH = ''
+
 class Permutation():
 
     def __init__(self, perm):
@@ -112,27 +114,23 @@ class Permutation():
 
 class Puzzle():
 
-    def __init__(self, pd_row, info_pth):
+    def __init__(self, puzzle_type, solution_state, initial_state, num_wildcards):
 
-        self._pd_row = pd_row
-        self._info_pth = info_pth
-
-        self.puzzle_type = pd_row.puzzle_type
-        self.solution_state = self.state_encoder(pd_row.solution_state)
-        self.initial_state = self.state_encoder(pd_row.initial_state)
-        self.num_wildcards = pd_row.num_wildcards
-        self._info_pth = info_pth
-        self.puzzle_info = pd.read_csv(info_pth)
+        self.puzzle_type = puzzle_type
+        self.solution_state = self.state_encoder(solution_state)
+        self.initial_state = self.state_encoder(initial_state)
+        self.num_wildcards = num_wildcards
+        self.puzzle_info = pd.read_csv(CFG_INFO_PTH)
         
-        self.current_state = self.state_encoder(pd_row.initial_state)
-        self.move_log = [self.state_encoder(pd_row.initial_state),]
+        self.current_state = self.state_encoder(initial_state)
+        self.move_log = [self.state_encoder(initial_state),]
 
         self._set_moves()
 
 
     def reset(self):
 
-        self.__init__(self._pd_row, self._info_pth)
+        self.__init__(self.puzzle_type, self.solution_state, self.initial_state, self.num_wildcards)
 
 
     def __str__(self):
@@ -162,7 +160,7 @@ class Puzzle():
         _allowed_moves = {key:Permutation(perm) for key, perm in eval(_allowed_moves).items()}
         self.allowed_moves = _allowed_moves | {'-'+key:(-perm) for key, perm in _allowed_moves.items()}
         _perm_len = len(list(_allowed_moves.values())[0].perm)
-        _u0 = Permutation(list(range(_perm_len)))
+        _u0 = Permutation(np.arange(_perm_len))
         self.allowed_moves['u0'] = _u0
 
 
@@ -182,7 +180,8 @@ class Puzzle():
         if seed:
             np.random.seed(seed)
 
-        _walk = np.random.choice(list(self.allowed_moves.keys()),size=stepsize,replace=True)
+        _not_stop = list(set(self.allowed_moves.keys()) - set('u0'))
+        _walk = np.random.choice(_not_stop,size=stepsize,replace=True)
         for key in _walk:
             self(key)
         return self
